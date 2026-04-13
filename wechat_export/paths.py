@@ -13,6 +13,7 @@ EXPORTS_DIR = OUTPUT_ROOT / "exports"
 CHAT_EXPORTS_DIR = EXPORTS_DIR / "chat"
 MANUAL_EXPORTS_DIR = CHAT_EXPORTS_DIR / "manual"
 BATCH_EXPORTS_DIR = CHAT_EXPORTS_DIR / "batch"
+CONTACT_EXPORTS_DIR = EXPORTS_DIR / "contacts"
 REPORTS_DIR = OUTPUT_ROOT / "reports"
 
 
@@ -27,6 +28,7 @@ def ensure_output_dirs():
         CHAT_EXPORTS_DIR,
         MANUAL_EXPORTS_DIR,
         BATCH_EXPORTS_DIR,
+        CONTACT_EXPORTS_DIR,
         REPORTS_DIR,
     ):
         path.mkdir(parents=True, exist_ok=True)

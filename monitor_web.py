@@ -447,96 +447,6 @@ def load_contact_names():
     return names
 
 
-def _extract_pb_field_30(data):
-    """从 extra_buffer (protobuf) 中提取 Field #30 的字符串值（联系人标签ID）"""
-    if not data:
-        return None
-    pos = 0
-    n = len(data)
-    while pos < n:
-        tag = 0
-        shift = 0
-        while pos < n:
-            b = data[pos]; pos += 1
-            tag |= (b & 0x7f) << shift
-            if not (b & 0x80):
-                break
-            shift += 7
-        field_num = tag >> 3
-        wire_type = tag & 0x07
-        if wire_type == 0:
-            while pos < n and data[pos] & 0x80:
-                pos += 1
-            pos += 1
-        elif wire_type == 2:
-            length = 0; shift = 0
-            while pos < n:
-                b = data[pos]; pos += 1
-                length |= (b & 0x7f) << shift
-                if not (b & 0x80):
-                    break
-                shift += 7
-            if field_num == 30:
-                try:
-                    return data[pos:pos + length].decode('utf-8')
-                except Exception:
-                    return None
-            pos += length
-        elif wire_type == 1:
-            pos += 8
-        elif wire_type == 5:
-            pos += 4
-        else:
-            break
-    return None
-
-
-def load_contact_tags():
-    """加载联系人标签及其成员"""
-    try:
-        conn = sqlite3.connect(CONTACT_CACHE)
-        try:
-            label_rows = conn.execute(
-                "SELECT label_id_, label_name_, sort_order_ FROM contact_label ORDER BY sort_order_"
-            ).fetchall()
-        except Exception:
-            conn.close()
-            return []
-        if not label_rows:
-            conn.close()
-            return []
-
-        labels = {}
-        for lid, lname, sort_order in label_rows:
-            labels[lid] = {'id': lid, 'name': lname, 'sort_order': sort_order, 'members': []}
-
-        names = load_contact_names()
-        rows = conn.execute(
-            "SELECT username, extra_buffer FROM contact WHERE extra_buffer IS NOT NULL"
-        ).fetchall()
-        conn.close()
-
-        for username, buf in rows:
-            label_str = _extract_pb_field_30(buf)
-            if not label_str:
-                continue
-            display = names.get(username, username)
-            for lid_s in label_str.split(','):
-                try:
-                    lid = int(lid_s.strip())
-                except (ValueError, AttributeError):
-                    continue
-                if lid in labels:
-                    labels[lid]['members'].append({'username': username, 'display_name': display})
-
-        result = sorted(labels.values(), key=lambda t: t['sort_order'])
-        for t in result:
-            t['member_count'] = len(t['members'])
-        return result
-    except Exception:
-        return []
-
-
 def format_msg_type(t):
     return {
         1: '文本', 3: '图片', 34: '语音', 42: '名片',
@@ -1905,31 +1815,9 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode('utf-8'))
 
-        elif self.path.startswith('/api/history'):
-            parsed = urllib.parse.urlparse(self.path)
-            params = urllib.parse.parse_qs(parsed.query)
-            filter_chat = params.get('chat', [''])[0].strip().lower()
-            since_ts = 0
-            try:
-                since_ts = int(params.get('since', ['0'])[0])
-            except (ValueError, TypeError):
-                pass
-            limit_val = 500
-            try:
-                limit_val = min(int(params.get('limit', ['500'])[0]), 2000)
-            except (ValueError, TypeError):
-                pass
-
+        elif self.path == '/api/history':
             with messages_lock:
                 data = sorted(messages_log, key=lambda m: m.get('timestamp', 0))
-
-            if since_ts:
-                data = [m for m in data if m.get('timestamp', 0) > since_ts]
-            if filter_chat:
-                data = [m for m in data if filter_chat in m.get('chat', '').lower()
-                        or filter_chat in m.get('username', '').lower()]
-            data = data[-limit_val:]
-
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.end_headers()
@@ -1960,20 +1848,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Cache-Control', 'public, max-age=86400')
             self.end_headers()
             self.wfile.write(data)
-
-        elif self.path.startswith('/api/tags'):
-            parsed = urllib.parse.urlparse(self.path)
-            params = urllib.parse.parse_qs(parsed.query)
-            name_filter = params.get('name', [''])[0].strip().lower()
-
-            tags = load_contact_tags()
-            if name_filter:
-                tags = [t for t in tags if name_filter in t['name'].lower()]
-
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.end_headers()
-            self.wfile.write(json.dumps(tags, ensure_ascii=False).encode('utf-8'))
 
         elif self.path == '/stream':
             self.send_response(200)
