@@ -1,6 +1,7 @@
 {
     "db_dir": "D:\\xwechat_files\\your_wxid\\db_storage",
-    "keys_file": "all_keys.json",
-    "decrypted_dir": "decrypted",
+    "keys_file": "wechat_export/output/keys/all_keys.json",
+    "decrypted_dir": "wechat_export/output/databases/decrypted",
+    "decoded_image_dir": "wechat_export/output/images/decoded_images",
     "wechat_process": "Weixin.exe"
 }

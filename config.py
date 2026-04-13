@@ -25,9 +25,9 @@ else:
 
 _DEFAULT = {
     "db_dir": _DEFAULT_TEMPLATE_DIR,
-    "keys_file": "all_keys.json",
-    "decrypted_dir": "decrypted",
-    "decoded_image_dir": "decoded_images",
+    "keys_file": "wechat_export/output/keys/all_keys.json",
+    "decrypted_dir": "wechat_export/output/databases/decrypted",
+    "decoded_image_dir": "wechat_export/output/images/decoded_images",
     "wechat_process": _DEFAULT_PROCESS,
 }
 

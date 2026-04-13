@@ -4,6 +4,7 @@ wechat_key.txt
 config.json
 decrypted/
 decoded_images/
+wechat_export/output/
 *.db
 *.db-shm
 *.db-wal
@@ -23,3 +24,4 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+.trae/
